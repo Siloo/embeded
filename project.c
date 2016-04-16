@@ -1013,10 +1013,10 @@ int main(void)
 	state b[0] b[1] b[2] end  0    0    0    0    0
 
 	*/
-	matrix[11][0] = inChoose;
-	matrix[11][1] = b[0];
-	matrix[11][2] = b[1];
-	matrix[11][3] = b[2];
+	matrix[10][0] = inChoose;
+	matrix[10][1] = b[0];
+	matrix[10][2] = b[1];
+	matrix[10][3] = b[2];
 
 	int i, j;
 	int set_new_blocks;
@@ -1026,7 +1026,7 @@ int main(void)
 			//choose blocks
 			j = selectBlock(3, b);
 			inChoose = 0;
-			matrix[11][0] = inChoose;
+			matrix[10][0] = inChoose;
 
 		}else{
 			putBlock(j, b, matrix, cache);
@@ -1050,9 +1050,9 @@ int main(void)
 				}
 				genNewBlock(set_new_blocks);
 				inChoose = 1;
-				matrix[11][1] = b[0];
-				matrix[11][2] = b[1];
-				matrix[11][3] = b[2];
+				matrix[10][1] = b[0];
+				matrix[10][2] = b[1];
+				matrix[10][3] = b[2];
 			}
 		}
 	}

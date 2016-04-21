@@ -4,9 +4,46 @@
 #include <unistd.h>
 #include <time.h>
 #include "usbkeyboard.h"
-
+/************************************Header Files Included******************************************/
+#include "vga_led.h"
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+#include <unistd.h>
+/*************************************End Headers*************************************************/
 #define MATRIX_ROW 11
 #define MATRIX_COL 10
+
+/*************************CODE FOR CALLING THE INTERFACE BETWEEN HARDWARE AND SOFTWARE*******************************/
+/*segment: the data you want to write into the hardware
+	index: the index of register you want to write into
+*/
+void write_segments(unsigned int segment, int index)
+{
+  vga_led_arg_t vla;
+  vla.digit = index;
+  vla.segments = segment;
+    if (ioctl(vga_led_fd, VGA_LED_WRITE_DIGIT, &vla)) {
+      perror("ioctl(VGA_LED_WRITE_DIGIT) failed");
+      return;
+    }
+}
+/*Pass into the index and get the data as the return value
+unsigned int read_segments(int index){
+	vga_led_arg_t vla;
+	vla.digit = index;
+	if (ioctl(vga_led_fd, VGA_LED_READ_DIGIT, &vla)) {
+      perror("ioctl(VGA_LED_READ_DIGIT) failed");
+      return -1;
+    }
+	return vla.segment;
+}
+*/
+
+
+/****************************************************END CODE*************************************************************/
 
 //initialize blocks
 int b1[1][5] = {1, 1, 1, 1, 1};
@@ -46,6 +83,21 @@ blockStuct block12;
 blockStuct block13;
 blockStuct block14;
 
+void passToHardware(int** matrix){
+	int row, col, index; 
+	//int indexList[110];
+	for (row = 0; row < 11; row++){
+		for (col = 0; col < 10; col++)
+		{
+			for (index = 1; index < 111; index++){
+				segment = matrix[row][col];
+				//segment = unsigned int read_segments(index);
+				write_segments(segment, index);
+		}
+	}
+
+}
+
 
 int generate()
 {
@@ -63,8 +115,8 @@ void clearLine(int** matrix)
 	int i;
 	int t;
 	int p, q, r;
-	for(row = 0; row < 9; row ++){ //get rows that can be cleaned
-		for(i = 0; i<9; i++){
+	for(row = 0; row < 10; row ++){ //get rows that can be cleaned
+		for(i = 0; i<10; i++){
 			if matrix[row][i] == 1{
 				row_to_clean[i] = row;
 			}else{
@@ -72,7 +124,7 @@ void clearLine(int** matrix)
 			}
 		}
 	}
-	for(col = 0; col < 9; col++){ //get columns that can be cleaned
+	for(col = 0; col < 10; col++){ //get columns that can be cleaned
 		for(t = 0; t <9; t++){
 			if matrix[t][col] == 1{
 				col_to_clean[i] = col;
@@ -131,14 +183,21 @@ int checkIfGameEnd(int** b, int** matrix){
 												/* the game is not end if there is one area that can fit in any of the shapes*/
 												end = 0;
 											}
+											break;
 										}
+										break;
 									}
+									break;
 								}
+								break;
 							}
+							break;
 						}else{
 							break;
 						}
+						break;
 					}
+					break;
 				}
 				break;
 			case 2:
@@ -155,16 +214,23 @@ int checkIfGameEnd(int** b, int** matrix){
 											if( b2[p][q] == temp[p][q]){
 												break;
 											}else{
+
 												end = 0;
 											}
+											break;
 										}
+										break;
 									}
+									break;
 								}
+								break;
 							}
 						}else{
 							break;
 						}
+						break;
 					}
+					break;
 				}
 				break;
 			case 3:
@@ -183,14 +249,21 @@ int checkIfGameEnd(int** b, int** matrix){
 											}else{
 												end = 0;
 											}
+											break;
 										}
+										break;
 									}
+									break;
 								}
+								break;
 							}
+							break;
 						}else{
 							break;
 						}
+						break;
 					}
+					break;
 				}
 				break;
 			case 4:
@@ -209,14 +282,21 @@ int checkIfGameEnd(int** b, int** matrix){
 											}else{
 												end = 0;
 											}
+											break;
 										}
+										break;
 									}
+									break;
 								}
+								break;
 							}
+							break;
 						}else{
 							break;
 						}
+						break;
 					}
+					break;
 				}
 				break;
 			case 5:
@@ -235,14 +315,21 @@ int checkIfGameEnd(int** b, int** matrix){
 											}else{
 												end = 0;
 											}
+											break;
 										}
+										break;
 									}
+									break;
 								}
+								break;
 							}
+							break;
 						}else{
 							break;
 						}
+						break;
 					}
+					break;
 				}
 				break;
 			case 6:
@@ -261,14 +348,21 @@ int checkIfGameEnd(int** b, int** matrix){
 											}else{
 												end = 0;
 											}
+											break;
 										}
+										break;
 									}
+									break;
 								}
+								break;
 							}
+							break;
 						}else{
 							break;
 						}
+						break;
 					}
+					break;
 				}
 				break;
 			case 7:
@@ -287,14 +381,21 @@ int checkIfGameEnd(int** b, int** matrix){
 											}else{
 												end = 0;
 											}
+											break;
 										}
+										break;
 									}
+									break;
 								}
+								break;
 							}
+							break;
 						}else{
 							break;
 						}
+						break;
 					}
+					break;
 				}
 				break;
 			case 8:
@@ -313,14 +414,21 @@ int checkIfGameEnd(int** b, int** matrix){
 											}else{
 												end = 0;
 											}
+											break;
 										}
+										break;
 									}
+									break;
 								}
+								break;
 							}
+							break;
 						}else{
 							break;
 						}
+						break;
 					}
+					break;
 				}
 				break;
 			case 9:
@@ -339,14 +447,21 @@ int checkIfGameEnd(int** b, int** matrix){
 											}else{
 												end = 0;
 											}
+											break;
 										}
+										break;
 									}
+									break;
 								}
+								break;
 							}
+							break;
 						}else{
 							break;
 						}
+						break;
 					}
+					break;
 				}
 				break;
 			case 10:
@@ -365,14 +480,21 @@ int checkIfGameEnd(int** b, int** matrix){
 											}else{
 												end = 0;
 											}
+											break;
 										}
+										break;
 									}
+									break;
 								}
+								break;
 							}
+							break;
 						}else{
 							break;
 						}
+						break;
 					}
+					break;
 				}
 				break;
 			case 11:
@@ -391,14 +513,21 @@ int checkIfGameEnd(int** b, int** matrix){
 											}else{
 												end = 0;
 											}
+											break;
 										}
+										break;
 									}
+									break;
 								}
+								break;
 							}
+							break;
 						}else{
 							break;
 						}
+						break;
 					}
+					break;
 				}
 				break;
 			case 12:
@@ -417,14 +546,21 @@ int checkIfGameEnd(int** b, int** matrix){
 											}else{
 												end = 0;
 											}
+											break;
 										}
+										break;
 									}
+									break;
 								}
+								break;
 							}
+							break;
 						}else{
 							break;
 						}
+						break;
 					}
+					break;
 				}
 				break;
 			case 13:
@@ -443,14 +579,21 @@ int checkIfGameEnd(int** b, int** matrix){
 											}else{
 												end = 0;
 											}
+											break;
 										}
+										break;
 									}
+									break;
 								}
+								break;
 							}
+							break;
 						}else{
 							break;
 						}
+						break;
 					}
+					break;
 				}
 				break;
 			case 14:
@@ -469,20 +612,29 @@ int checkIfGameEnd(int** b, int** matrix){
 											}else{
 												end = 0;
 											}
+											break;
 										}
+										break;
 									}
+									break;
 								}
+								break;
 							}
+							break;
 						}else{
 							break;
 						}
+						break;
 					}
+					break;
 				}
 				break;
 			default:
 				break;
 		}
+		break;
 	}
+	break;
 
 	return end;
 }
@@ -660,7 +812,9 @@ int checkIfCanPut(int xsize, int ysize, int x, int y, int** matrix){
 			}else{
 				check = 1;
 			}
+			break;
 		}
+		break;
 	}
 	return check;
 }
@@ -815,9 +969,11 @@ void moveBlock(int block, int xsize, int ysize, int x, int y, int** matrix, int*
 				/* if did not trigger put block signal, save changes in cache matrix */
 				cache[0 + x + temp_row][0 + y + temp_col] = temp[temp_row][temp_col] + cache[0 + x + temp_row][0 + y + temp_col];
 				cache[0 + x + temp_row][0 + y + temp_col] = 3;
+				passToHardware(cache);
 			}else if(boolPut == 1){
 				/* if triggered put block signal, save changes in matrix */
-				matrix[0 + x + temp_row][0 + y + temp_col] = ma[temp_row][temp_col] + matrix[0 + x + temp_row][0 + y + temp_col];	
+				matrix[0 + x + temp_row][0 + y + temp_col] = ma[temp_row][temp_col] + matrix[0 + x + temp_row][0 + y + temp_col];
+				passToHardware(matrix);
 			}
 		}
 	}
@@ -1017,24 +1173,30 @@ int main(void)
 	matrix[10][1] = b[0];
 	matrix[10][2] = b[1];
 	matrix[10][3] = b[2];
+	passToHardware(matrix);
 
 	int i, j;
 	int set_new_blocks;
 
 	for (;;) {
 		if (inChoose == 1){
-			//choose blocks
 			j = selectBlock(3, b);
 			inChoose = 0;
 			matrix[10][0] = inChoose;
+			passToHardware(matrix);
 
 		}else{
 			putBlock(j, b, matrix, cache);
 			b[j] = 0;//make used blocks blank
-			if (checkIfGameEnd(matrix) == 1){
+			matrix[10][j+1] = 0;
+
+			if (checkIfGameEnd(b, matrix) == 1){
+				matrix[10][4] = 1;
+				passToHardware(matrix);
 				printf("%s\n", "end");
 				break;
 			}else{
+				matrix[10][4] = 0
 				clearLine(matrix);
 				if (b[0] == 0){
 					if (b[1] == 0){
@@ -1048,12 +1210,16 @@ int main(void)
 				}else{
 					set_new_blocks = 0;
 				}
-				genNewBlock(set_new_blocks);
+				//genNewBlock(set_new_blocks);
 				inChoose = 1;
+				matrix[10][0] = 1;
 				matrix[10][1] = b[0];
 				matrix[10][2] = b[1];
 				matrix[10][3] = b[2];
+				passToHardware(matrix);
 			}
 		}
+		break;
 	}
+	break;
 }

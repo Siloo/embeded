@@ -86,6 +86,7 @@ blockStuct block14;
 void passToHardware(int** matrix){
 	int row, col, index; 
 	//int indexList[110];
+	unsigned int segment;
 	for (row = 0; row < 11; row++){
 		for (col = 0; col < 10; col++)
 		{

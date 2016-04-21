@@ -1171,13 +1171,14 @@ int main(void)
 	 0    0    0    0    0    0    0    0    0    0
      0    0    0    0    0    0    0    0    0    0
 	 0    0    0    0    0    0    0    0    0    0
-	state b[0] b[1] b[2] end sco   0    0    0    0
+	state b[0] b[1] b[2] end sco  arr   0    0    0
 
 	*/
 	matrix[10][0] = inChoose;
 	matrix[10][1] = b[0];
 	matrix[10][2] = b[1];
 	matrix[10][3] = b[2];
+	matrix[10][6] = 1;
 	passToHardware(matrix);
 
 	int i, j;
@@ -1188,6 +1189,7 @@ int main(void)
 			j = selectBlock(3, b);
 			inChoose = 0;
 			matrix[10][0] = inChoose;
+			matrix[10][6] = j+1
 			passToHardware(matrix);
 
 		}else{

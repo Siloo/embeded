@@ -115,10 +115,12 @@ void clearLine(int** matrix)
 	int i;
 	int t;
 	int p, q, r;
+	int score;
 	for(row = 0; row < 10; row ++){ //get rows that can be cleaned
 		for(i = 0; i<10; i++){
 			if matrix[row][i] == 1{
 				row_to_clean[i] = row;
+				score = score + 1;
 			}else{
 				row_to_clean[i] = 11;
 			}
@@ -128,6 +130,7 @@ void clearLine(int** matrix)
 		for(t = 0; t <9; t++){
 			if matrix[t][col] == 1{
 				col_to_clean[i] = col;
+				score = score + 1;
 			}else{
 				col_to_clean[i] = 11;
 			}
@@ -149,6 +152,8 @@ void clearLine(int** matrix)
 		}
 	}
 
+	matrix[10][5] = score;
+	passToHardware(matrix);
 
 }
 
@@ -1166,7 +1171,7 @@ int main(void)
 	 0    0    0    0    0    0    0    0    0    0
      0    0    0    0    0    0    0    0    0    0
 	 0    0    0    0    0    0    0    0    0    0
-	state b[0] b[1] b[2] end  0    0    0    0    0
+	state b[0] b[1] b[2] end sco   0    0    0    0
 
 	*/
 	matrix[10][0] = inChoose;
@@ -1197,7 +1202,7 @@ int main(void)
 				break;
 			}else{
 				matrix[10][4] = 0
-				clearLine(matrix);
+				clearLine(matrix); 
 				if (b[0] == 0){
 					if (b[1] == 0){
 						if (b[2] == 0){

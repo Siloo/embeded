@@ -20,16 +20,7 @@
 /*segment: the data you want to write into the hardware
 	index: the index of register you want to write into
 */
-void write_segments(unsigned int segment, int index)
-{
-  vga_led_arg_t vla;
-  vla.digit = index;
-  vla.segments = segment;
-    if (ioctl(vga_led_fd, VGA_LED_WRITE_DIGIT, &vla)) {
-      perror("ioctl(VGA_LED_WRITE_DIGIT) failed");
-      return;
-    }
-}
+
 /*Pass into the index and get the data as the return value
 unsigned int read_segments(int index){
 	vga_led_arg_t vla;
@@ -85,6 +76,19 @@ blockStuct block11;
 blockStuct block12;
 blockStuct block13;
 blockStuct block14;
+
+int vga_led_fd;
+
+void write_segments(unsigned int segment, int index)
+{
+  vga_led_arg_t vla;
+  vla.digit = index;
+  vla.segments = segment;
+    if (ioctl(vga_led_fd, VGA_LED_WRITE_DIGIT, &vla)) {
+      perror("ioctl(VGA_LED_WRITE_DIGIT) failed");
+      return;
+    }
+}
 
 void passToHardware(int** matrix){
 	int row, col, index; 

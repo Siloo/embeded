@@ -1236,7 +1236,7 @@ int main(void)
 					if (b[1] == 0){
 						if (b[2] == 0){
 							set_new_blocks = 1;
-							genNewBlock(set_new_blocks, b);
+							genNewBlock(set_new_blocks, b, packet, transferred, keystate);
 						}
 					}else{
 						set_new_blocks = 0;

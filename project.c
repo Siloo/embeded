@@ -61,6 +61,9 @@ int b12[2][3] = {{1, 1, 0}, {0, 1, 1}};
 int b13[1][3] = {1, 1, 1};
 int b14[1][2] = {1, 1};
 
+struct libusb_device_handle *keyboard;
+uint8_t endpoint_address;
+
 typedef struct block{
 	int height;
 	int width;
@@ -85,8 +88,7 @@ blockStuct block14;
 
 void passToHardware(int** matrix){
 	int row, col, index; 
-	//int indexList[110];
-	unsigned int segment;
+	unsigned int segment = 0;
 	for (row = 0; row < 11; row++){
 		for (col = 0; col < 10; col++)
 		{
@@ -94,6 +96,7 @@ void passToHardware(int** matrix){
 				segment = matrix[row][col];
 				//segment = unsigned int read_segments(index);
 				write_segments(segment, index);
+			}
 		}
 	}
 
@@ -116,12 +119,10 @@ void clearLine(int** matrix)
 	int i;
 	int t;
 	int p, q, r;
-	int score;
 	for(row = 0; row < 10; row ++){ //get rows that can be cleaned
 		for(i = 0; i<10; i++){
-			if matrix[row][i] == 1{
+			if (matrix[row][i] == 1){
 				row_to_clean[i] = row;
-				score = score + 1;
 			}else{
 				row_to_clean[i] = 11;
 			}
@@ -129,9 +130,8 @@ void clearLine(int** matrix)
 	}
 	for(col = 0; col < 10; col++){ //get columns that can be cleaned
 		for(t = 0; t <9; t++){
-			if matrix[t][col] == 1{
+			if (matrix[t][col] == 1){
 				col_to_clean[i] = col;
-				score = score + 1;
 			}else{
 				col_to_clean[i] = 11;
 			}
@@ -153,8 +153,6 @@ void clearLine(int** matrix)
 		}
 	}
 
-	matrix[10][5] = score;
-	passToHardware(matrix);
 
 }
 
@@ -163,14 +161,28 @@ int checkIfGameEnd(int** b, int** matrix){
 	int end = 1;
 	int m, n, temp_row, temp_col;
 	int p, q;
-	for (i = 0; i<3, i++){
-		int temp = b[i];
+	int temp = b[i];
+	int temp1[1][5];
+	int temp2[5][1];
+	int temp3[1][4];
+	int temp4[4][1];
+	int temp5[2][2];
+	int temp6[3][3];
+	int temp7[3][3];
+	int temp8[2][1];
+	int temp9[3][1];
+	int temp10[1][1];
+	int temp11[2][2];
+	int temp12[2][3];
+	int temp13[1][3];
+	int temp14[1][2];
+	for (i = 0; i<3; i++){
+
 		switch(temp){
 			case 0:
 				end = 0;
 				break;
 			case 1:
-				int temp[1][5];
 				for (m = 0; m < 10; m++){
 					for (n = 0; n < 10; n++){
 						int temp_block = matrix[m][n];
@@ -180,10 +192,10 @@ int checkIfGameEnd(int** b, int** matrix){
 							for(temp_row = 0; temp_row < 1; temp_row ++){
 								for (temp_col = 0; temp_col < 5; temp_col ++){
 									/*extract the shape of one of the left shapes and compare*/
-									temp[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
+									temp1[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
 									for (p = 0; p < 1; p ++){
 										for (q = 0; q < 5; q ++){
-											if( b1[p][q] == temp[p][q]){
+											if( b1[p][q] == temp1[p][q]){
 												break;
 											}else{
 												/* the game is not end if there is one area that can fit in any of the shapes*/
@@ -207,17 +219,16 @@ int checkIfGameEnd(int** b, int** matrix){
 				}
 				break;
 			case 2:
-				int temp[5][1];
 				for (m = 0; m < 10; m++){
 					for (n = 0; n < 10; n++){
 						int temp_block = matrix[m][n];
 						if (temp_block == 0 && 10 - m > 4 && 10 - n > 0){
 							for(temp_row = 0; temp_row < 5; temp_row ++){
 								for (temp_col = 0; temp_col < 1; temp_col ++){
-									temp[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
+									temp2[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
 									for (p = 0; p < 5; p ++){
 										for (q = 0; q < 1; q ++){
-											if( b2[p][q] == temp[p][q]){
+											if( b2[p][q] == temp2[p][q]){
 												break;
 											}else{
 
@@ -240,17 +251,17 @@ int checkIfGameEnd(int** b, int** matrix){
 				}
 				break;
 			case 3:
-				int temp[1][4];
+				
 				for (m = 0; m < 10; m++){
 					for (n = 0; n < 10; n++){
 						int temp_block = matrix[m][n];
 						if (temp_block == 0 && 10 - m > 0 && 10 - n > 3){
 							for(temp_row = 0; temp_row < 1; temp_row ++){
 								for (temp_col = 0; temp_col < 4; temp_col ++){
-									temp[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
+									temp3[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
 									for (p = 0; p < 1; p ++){
 										for (q = 0; q < 4; q ++){
-											if( b3[p][q] == temp[p][q]){
+											if( b3[p][q] == temp3[p][q]){
 												break;
 											}else{
 												end = 0;
@@ -273,17 +284,17 @@ int checkIfGameEnd(int** b, int** matrix){
 				}
 				break;
 			case 4:
-				int temp[4][1];
+				
 				for (m = 0; m < 10; m++){
 					for (n = 0; n < 10; n++){
 						int temp_block = matrix[m][n];
 						if (temp_block == 0 && 10 - m > 3 && 10 - n > 0){
 							for(temp_row = 0; temp_row < 4; temp_row ++){
 								for (temp_col = 0; temp_col < 1; temp_col ++){
-									temp[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
+									temp4[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
 									for (p = 0; p < 4; p ++){
 										for (q = 0; q < 1; q ++){
-											if( b4[p][q] == temp[p][q]){
+											if( b4[p][q] == temp4[p][q]){
 												break;
 											}else{
 												end = 0;
@@ -306,17 +317,17 @@ int checkIfGameEnd(int** b, int** matrix){
 				}
 				break;
 			case 5:
-				int temp[2][2];
+				
 				for (m = 0; m < 10; m++){
 					for (n = 0; n < 10; n++){
 						int temp_block = matrix[m][n];
 						if (temp_block == 0 && 10 - m > 1 && 10 - n > 1){
 							for(temp_row = 0; temp_row < 2; temp_row ++){
 								for (temp_col = 0; temp_col < 2; temp_col ++){
-									temp[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
+									temp5[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
 									for (p = 0; p < 2; p ++){
 										for (q = 0; q < 2; q ++){
-											if( b5[p][q] == temp[p][q]){
+											if( b5[p][q] == temp5[p][q]){
 												break;
 											}else{
 												end = 0;
@@ -339,17 +350,17 @@ int checkIfGameEnd(int** b, int** matrix){
 				}
 				break;
 			case 6:
-				int temp[3][3];
+				
 				for (m = 0; m < 10; m++){
 					for (n = 0; n < 10; n++){
 						int temp_block = matrix[m][n];
 						if (temp_block == 0 && 10 - m > 2 && 10 - n > 2){
 							for(temp_row = 0; temp_row < 3; temp_row ++){
 								for (temp_col = 0; temp_col < 3; temp_col ++){
-									temp[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
+									temp6[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
 									for (p = 0; p < 3; p ++){
 										for (q = 0; q < 3; q ++){
-											if( b6[p][q] == temp[p][q]){
+											if( b6[p][q] == temp6[p][q]){
 												break;
 											}else{
 												end = 0;
@@ -372,17 +383,17 @@ int checkIfGameEnd(int** b, int** matrix){
 				}
 				break;
 			case 7:
-				int temp[3][3];
+				
 				for (m = 0; m < 10; m++){
 					for (n = 0; n < 10; n++){
 						int temp_block = matrix[m][n];
 						if (temp_block == 0 && 10 - m > 2 && 10 - n > 2){
 							for(temp_row = 0; temp_row < 3; temp_row ++){
 								for (temp_col = 0; temp_col < 3; temp_col ++){
-									temp[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
+									temp7[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
 									for (p = 0; p < 3; p ++){
 										for (q = 0; q < 3; q ++){
-											if( b7[p][q] == temp[p][q]){
+											if( b7[p][q] == temp7[p][q]){
 												break;
 											}else{
 												end = 0;
@@ -405,17 +416,17 @@ int checkIfGameEnd(int** b, int** matrix){
 				}
 				break;
 			case 8:
-				int temp[2][1];
+				
 				for (m = 0; m < 10; m++){
 					for (n = 0; n < 10; n++){
 						int temp_block = matrix[m][n];
 						if (temp_block == 0 && 10 - m > 1 && 10 - n > 0){
 							for(temp_row = 0; temp_row < 2; temp_row ++){
 								for (temp_col = 0; temp_col < 1; temp_col ++){
-									temp[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
+									temp8[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
 									for (p = 0; p < 2; p ++){
 										for (q = 0; q < 1; q ++){
-											if( b8[p][q] == temp[p][q]){
+											if( b8[p][q] == temp8[p][q]){
 												break;
 											}else{
 												end = 0;
@@ -438,17 +449,17 @@ int checkIfGameEnd(int** b, int** matrix){
 				}
 				break;
 			case 9:
-				int temp[3][1];
+				
 				for (m = 0; m < 10; m++){
 					for (n = 0; n < 10; n++){
 						int temp_block = matrix[m][n];
 						if (temp_block == 0 && 10 - m > 2 && 10 - n > 0){
 							for(temp_row = 0; temp_row < 3; temp_row ++){
 								for (temp_col = 0; temp_col < 1; temp_col ++){
-									temp[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
+									temp9[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
 									for (p = 0; p < 3; p ++){
 										for (q = 0; q < 1; q ++){
-											if( b9[p][q] == temp[p][q]){
+											if( b9[p][q] == temp9[p][q]){
 												break;
 											}else{
 												end = 0;
@@ -471,17 +482,17 @@ int checkIfGameEnd(int** b, int** matrix){
 				}
 				break;
 			case 10:
-				int temp[1][1];
+				
 				for (m = 0; m < 10; m++){
 					for (n = 0; n < 10; n++){
 						int temp_block = matrix[m][n];
 						if (temp_block == 0 && 10 - m > 0 && 10 - n > 0){
 							for(temp_row = 0; temp_row < 1; temp_row ++){
 								for (temp_col = 0; temp_col < 1; temp_col ++){
-									temp[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
+									temp10[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
 									for (p = 0; p < 1; p ++){
 										for (q = 0; q < 1; q ++){
-											if( b10[p][q] == temp[p][q]){
+											if( b10[p][q] == temp10[p][q]){
 												break;
 											}else{
 												end = 0;
@@ -504,17 +515,17 @@ int checkIfGameEnd(int** b, int** matrix){
 				}
 				break;
 			case 11:
-				int temp[2][2];
+				
 				for (m = 0; m < 10; m++){
 					for (n = 0; n < 10; n++){
 						int temp_block = matrix[m][n];
 						if (temp_block == 0 && 10 - m > 2 && 10 - n > 2){
 							for(temp_row = 0; temp_row < 3; temp_row ++){
 								for (temp_col = 0; temp_col < 3; temp_col ++){
-									temp[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
+									temp11[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
 									for (p = 0; p < 3; p ++){
 										for (q = 0; q < 3; q ++){
-											if( b6[p][q] == temp[p][q]){
+											if( b6[p][q] == temp11[p][q]){
 												break;
 											}else{
 												end = 0;
@@ -537,17 +548,17 @@ int checkIfGameEnd(int** b, int** matrix){
 				}
 				break;
 			case 12:
-				int temp[2][3];
+				
 				for (m = 0; m < 10; m++){
 					for (n = 0; n < 10; n++){
 						int temp_block = matrix[m][n];
 						if (temp_block == 0 && 10 - m > 1 && 10 - n > 2){
 							for(temp_row = 0; temp_row < 2; temp_row ++){
 								for (temp_col = 0; temp_col < 3; temp_col ++){
-									temp[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
+									temp12[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
 									for (p = 0; p < 2; p ++){
 										for (q = 0; q < 3; q ++){
-											if( b12[p][q] == temp[p][q]){
+											if( b12[p][q] == temp12[p][q]){
 												break;
 											}else{
 												end = 0;
@@ -570,17 +581,17 @@ int checkIfGameEnd(int** b, int** matrix){
 				}
 				break;
 			case 13:
-				int temp[1][3];
+				
 				for (m = 0; m < 10; m++){
 					for (n = 0; n < 10; n++){
 						int temp_block = matrix[m][n];
 						if (temp_block == 0 && 10 - m > 0 && 10 - n > 2){
 							for(temp_row = 0; temp_row < 1; temp_row ++){
 								for (temp_col = 0; temp_col < 3; temp_col ++){
-									temp[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
+									temp13[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
 									for (p = 0; p < 1; p ++){
 										for (q = 0; q < 3; q ++){
-											if( b13[p][q] == temp[p][q]){
+											if( b13[p][q] == temp13[p][q]){
 												break;
 											}else{
 												end = 0;
@@ -603,17 +614,17 @@ int checkIfGameEnd(int** b, int** matrix){
 				}
 				break;
 			case 14:
-				int temp[1][2];
+				
 				for (m = 0; m < 10; m++){
 					for (n = 0; n < 10; n++){
 						int temp_block = matrix[m][n];
 						if (temp_block == 0 && 10 - m > 0 && 10 - n > 1){
 							for(temp_row = 0; temp_row < 1; temp_row ++){
 								for (temp_col = 0; temp_col < 2; temp_col ++){
-									temp[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
+									temp14[temp_row][temp_col] = matrix[m + temp_row][n + temp_col];
 									for (p = 0; p < 1; p ++){
 										for (q = 0; q < 2; q ++){
-											if( b14[p][q] == temp[p][q]){
+											if( b14[p][q] == temp14[p][q]){
 												break;
 											}else{
 												end = 0;
@@ -640,18 +651,18 @@ int checkIfGameEnd(int** b, int** matrix){
 		}
 		break;
 	}
-	break;
 
 	return end;
 }
 
-void putBlock(int j, int** b, int** matrix, int** cache){
+//CHECK INPUT HERE
+void putBlock(int j, int** b, int** matrix, int** cache, struct usb_keyboard_packet packet, int transferred, char keystate[12]){
 	int x, y; //initialise position
 	int right_bound, left_bound, up_bound, low_bound, xsize, ysize;
 	x = 0;
 	y = 0;
 	int temp = b[j];
-	int q = j
+	int q = j;
 	int inChoose;
 
 	switch(temp){
@@ -749,7 +760,7 @@ void putBlock(int j, int** b, int** matrix, int** cache){
 	      	sprintf(keystate, "%02x %02x %02x", packet.modifiers, packet.keycode[0], packet.keycode[1]);
 	    fbputs(keystate, 6, 0);
 	    if (packet.keycode[0] == 0x29){
-	      	return inChoose = 1;
+	      	matrix[10][0] = 1;
 	      	break;
 	    }else if(packet.keycode[0] == 0x4F){
 	    	if (x < right_bound){
@@ -803,11 +814,12 @@ void putBlock(int j, int** b, int** matrix, int** cache){
 	    }
 	    }
 	}
-	return inChoose;
+	matrix[10][0] = inChoose;
 }
 
 int checkIfCanPut(int xsize, int ysize, int x, int y, int** matrix){
 	int i, j;
+	int check;
 	for (i = x; i < x+ysize; i++){
 		for (j = y; j < y+xsize; j ++){
 			int temp3 = matrix[i][j];
@@ -846,7 +858,7 @@ void moveBlock(int block, int xsize, int ysize, int x, int y, int** matrix, int*
 		}
 	}
 
-	for (i=0; i<ysize; i++)
+	for (i=0; i< ysize; i++)
     {
        temp[i] = malloc(xsize * sizeof(int));
     }
@@ -860,7 +872,7 @@ void moveBlock(int block, int xsize, int ysize, int x, int y, int** matrix, int*
 		}
 	}
 
-	int p. q;
+	int p, q;
 	switch(block){
 		case 1:
 			for (p = 0; p < ysize; p++){
@@ -978,7 +990,7 @@ void moveBlock(int block, int xsize, int ysize, int x, int y, int** matrix, int*
 				passToHardware(cache);
 			}else if(boolPut == 1){
 				/* if triggered put block signal, save changes in matrix */
-				matrix[0 + x + temp_row][0 + y + temp_col] = ma[temp_row][temp_col] + matrix[0 + x + temp_row][0 + y + temp_col];
+				matrix[0 + x + temp_row][0 + y + temp_col] = temp[temp_row][temp_col] + matrix[0 + x + temp_row][0 + y + temp_col];
 				passToHardware(matrix);
 			}
 		}
@@ -987,7 +999,10 @@ void moveBlock(int block, int xsize, int ysize, int x, int y, int** matrix, int*
 
 }
 
-int selectBlock(int length, int *b)
+
+
+//CHECK INPUT VALUE 
+int selectBlock(int length, int *b, int **cache, struct usb_keyboard_packet packet, int transferred, char keystate[12])
 {
 	int t = 0; 
 	for(;;){
@@ -1043,18 +1058,24 @@ void genNewBlock(int set_new_blocks, int** b)
 }
 
 
-init_array(int** array, int rows, int cols){
 
-}
 
+
+
+
+//***********************************************************************
 int main(void)
 {
 	int **b;
-	int **matrix
+	int **matrix;
 	int rows = MATRIX_ROW;
 	int cols = MATRIX_COL;
 	int i, k, t;
 	int **cache;
+
+	struct usb_keyboard_packet packet;
+	int transferred;
+  	char keystate[12];
 
 	int c, cache_row, cache_col;
 
@@ -1158,7 +1179,7 @@ int main(void)
 
 
 	genNewBlock(1, b);
-	int inChoose = 1;
+	inChoose = 1;
 
 	/*  matrix structure
 
@@ -1172,25 +1193,28 @@ int main(void)
 	 0    0    0    0    0    0    0    0    0    0
      0    0    0    0    0    0    0    0    0    0
 	 0    0    0    0    0    0    0    0    0    0
-	state b[0] b[1] b[2] end sco  arr   0    0    0
+	state b[0] b[1] b[2] end  0    0    0    0    0
 
 	*/
 	matrix[10][0] = inChoose;
 	matrix[10][1] = b[0];
 	matrix[10][2] = b[1];
 	matrix[10][3] = b[2];
-	matrix[10][6] = 1;
 	passToHardware(matrix);
 
-	int i, j;
+	int j;
 	int set_new_blocks;
+
+	if ((keyboard = openKeyboard(&endpoint_address)) == NULL){
+		fprintf(stderr, "keyboard not found" );
+		exit(1);
+	}
 
 	for (;;) {
 		if (inChoose == 1){
-			j = selectBlock(3, b);
+			j = selectBlock(3, b， endpoint_address, packet, transferred, keystate);
 			inChoose = 0;
 			matrix[10][0] = inChoose;
-			matrix[10][6] = j+1
 			passToHardware(matrix);
 
 		}else{
@@ -1204,13 +1228,13 @@ int main(void)
 				printf("%s\n", "end");
 				break;
 			}else{
-				matrix[10][4] = 0
-				clearLine(matrix); 
+				matrix[10][4] = 0;
+				clearLine(matrix);
 				if (b[0] == 0){
 					if (b[1] == 0){
 						if (b[2] == 0){
 							set_new_blocks = 1;
-							genNewBlock(set_new_blocks);
+							genNewBlock(set_new_blocks, b);
 						}
 					}else{
 						set_new_blocks = 0;
@@ -1228,6 +1252,10 @@ int main(void)
 			}
 		}
 		break;
+		
+		
 	}
-	break;
-}
+	return 0;
+};
+
+

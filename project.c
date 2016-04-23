@@ -1076,11 +1076,9 @@ int main(void)
 	int cols = MATRIX_COL;
 	int i, k, t;
 	int **cache;
-
 	struct usb_keyboard_packet packet;
 	int transferred;
   	char keystate[12];
-
 	int c, cache_row, cache_col;
 
 	matrix = malloc(rows * sizeof *matrix);

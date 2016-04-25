@@ -79,12 +79,18 @@ blockStuct block14;
 
 int vga_led_fd;
 
-void write_segments(unsigned int segment, int index)
+void write_segments(unsigned int index, unsigned int segment)
 {
   vga_led_arg_t vla;
-  vla.digit = index;
-  vla.segments = segment;
+  vla.digit = 0;
+  vla.segments = index;
     if (ioctl(vga_led_fd, VGA_LED_WRITE_DIGIT, &vla)) {
+      perror("ioctl(VGA_LED_WRITE_DIGIT) failed");
+      return;
+    }
+	vla.digit = 1;
+	vla.segments = segment; 
+	if (ioctl(vga_led_fd, VGA_LED_WRITE_DIGIT, &vla)) {
       perror("ioctl(VGA_LED_WRITE_DIGIT) failed");
       return;
     }
@@ -99,7 +105,7 @@ void passToHardware(int** matrix){
 			for (index = 1; index < 111; index++){
 				segment = matrix[row][col];
 				//segment = unsigned int read_segments(index);
-				write_segments(segment, index);
+				write_segments(index, segment);
 			}
 		}
 	}
@@ -1214,13 +1220,13 @@ int main(void)
 
 	for (;;) {
 		if (inChoose == 1){
-			j = selectBlock(3, b， endpoint_address, packet, transferred, keystate);
+			j = selectBlock(3, b, cache, packet, transferred, keystate);
 			inChoose = 0;
 			matrix[10][0] = inChoose;
 			passToHardware(matrix);
 
 		}else{
-			putBlock(j, b, matrix, cache);
+			putBlock(j, b, matrix, cache, packet, transferred, keystate);
 			b[j] = 0;//make used blocks blank
 			matrix[10][j+1] = 0;
 
@@ -1236,7 +1242,7 @@ int main(void)
 					if (b[1] == 0){
 						if (b[2] == 0){
 							set_new_blocks = 1;
-							genNewBlock(set_new_blocks, b, packet, transferred, keystate);
+							genNewBlock(set_new_blocks, b);
 						}
 					}else{
 						set_new_blocks = 0;

@@ -1,4 +1,3 @@
-/* datalink rework,  date: 2016-4-26*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,14 +5,13 @@
 #include <time.h>
 #include "usbkeyboard.h"
 /************************************Header Files Included******************************************/
-#include "vga_led.h"//import struct, 2016-4-26
+#include "vga_led.h"
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
-
-
+#include <string.h>
+#include <unistd.h>
 /*************************************End Headers*************************************************/
 #define MATRIX_ROW 11
 #define MATRIX_COL 10
@@ -34,8 +32,6 @@ unsigned int read_segments(int index){
 	return vla.segment;
 }
 */
-
-int vga_led_fd;
 
 
 /****************************************************END CODE*************************************************************/
@@ -82,45 +78,38 @@ blockStuct block13;
 blockStuct block14;
 
 int vga_led_fd;
-//AVALON-MM INFO:
-//		- 16bit data link
-
-//new struct //included in vga_led.h
-/*
-typedef struct {
-	u16 data;
-} vga_led_arg_t;
-*/
-
-//16bit bus writedata
-///index [15:8]
-//segment[7:0]
 
 void write_segments(unsigned int index, unsigned int segment)
 {
-	vga_led_arg_t vla;
-	//mask 			   5432109876543210
-	const int mask = 0b0000000011111111;
-	vla.data = ((mask&index)<<8)|((mask&segment));
-	//printf("data=%d\n", vla.data);
-    if (ioctl(vga_led_fd, _IOW('q', 1, vga_led_arg_t *), &vla)){
-        perror("vga_led write data failed ( project.c -> write_segments)"); 
-        return;
+  vga_led_arg_t vla;
+  vla.digit = 0;
+  vla.segments = index;
+    if (ioctl(vga_led_fd, VGA_LED_WRITE_DIGIT, &vla)) {
+      perror("ioctl(VGA_LED_WRITE_DIGIT) failed");
+      return;
     }
-	//printf("WS exit");
+	vla.digit = 1;
+	vla.segments = segment; 
+	if (ioctl(vga_led_fd, VGA_LED_WRITE_DIGIT, &vla)) {
+      perror("ioctl(VGA_LED_WRITE_DIGIT) failed");
+      return;
+    }
 }
 
 void passToHardware(int** matrix){
-	perror("P2H enter");
 	int row, col, index; 
-	int segment = 0;
+	unsigned int segment = 0;
 	for (row = 0; row < 11; row++){
-		for(col= 0; col < 10; col++){
-			index = (row*10) + col + 1;
-			segment = matrix[row][col];
-			write_segments(index, segment);		
+		for (col = 0; col < 10; col++)
+		{
+			for (index = 1; index < 111; index++){
+				segment = matrix[row][col];
+				//segment = unsigned int read_segments(index);
+				write_segments(index, segment);
+			}
 		}
 	}
+
 }
 
 
@@ -138,57 +127,51 @@ void clearLine(int** matrix)
 	int row_to_clean[10];
 	int col_to_clean[10];
 	int i;
-	int j;
 	int t;
 	int p, q, r;
-	int score;
-	score = 0;
 	for(row = 0; row < 10; row ++){ //get rows that can be cleaned
-		if (matrix[row][])
+		for(i = 0; i<10; i++){
+			if (matrix[row][i] == 1){
+				row_to_clean[i] = row;
+			}else{
+				row_to_clean[i] = 11;
+			}
+		}
 	}
 	for(col = 0; col < 10; col++){ //get columns that can be cleaned
-		for(j = 0; j <9; j++){
+		for(t = 0; t <9; t++){
 			if (matrix[t][col] == 1){
 				col_to_clean[i] = col;
 			}else{
-				col_to_clean[i] = 20;
+				col_to_clean[i] = 11;
 			}
 		}
 	}
 
 	for(p = 0; p <9; p ++ ){
 		int temp = row_to_clean[p];
-		if (temp != 20){
-			for(q = 0; q < 10; q++){
+		if (temp != 11){
+			for(q = 0; q < 9; q++){
 				matrix[temp][q] = 0;
-				score = score + 1;
 			}
-		}		
-	}
-
-	for (t = 0; t < 9; t++){
-		int temp2 = col_to_clean[t];
-		if (temp2 != 20){
-			for(r = 0; r < 10; r++){
+		}
+		int temp2 = col_to_clean[p];
+		if (temp2 != 11){
+			for(r = 0; r < 9; r++){
 				matrix[r][temp2] = 0;
-				score = score + 1;
 			}	
 		}
 	}
 
-	matrix[10][5] = matrix[10][5] + score;
-	int send_score = matrix[10][5];
-	write_segments(106, send_score);//send score;
-
 
 }
 
-int checkIfGameEnd(int* b, int** matrix){
+int checkIfGameEnd(int** b, int** matrix){
 	int i;
 	int end = 1;
 	int m, n, temp_row, temp_col;
 	int p, q;
-	int temp = 0;
+	int temp = b[i];
 	int temp1[1][5];
 	int temp2[5][1];
 	int temp3[1][4];
@@ -204,7 +187,7 @@ int checkIfGameEnd(int* b, int** matrix){
 	int temp13[1][3];
 	int temp14[1][2];
 	for (i = 0; i<3; i++){
-		temp = b[i];
+
 		switch(temp){
 			case 0:
 				end = 0;
@@ -215,7 +198,7 @@ int checkIfGameEnd(int* b, int** matrix){
 						int temp_block = matrix[m][n];
 						/*start to  extract blocks from matrix if there is an empty bloack and start from this block there are enough blocks to match the shape, 
 						regardless if the blocks are empty or not*/
-						if (temp_block == 0 && 9 - m > 0 && 9 - n < 6){
+						if (temp_block == 0 && 10 - m > 0 && 10 - n > 4){
 							for(temp_row = 0; temp_row < 1; temp_row ++){
 								for (temp_col = 0; temp_col < 5; temp_col ++){
 									/*extract the shape of one of the left shapes and compare*/
@@ -227,7 +210,6 @@ int checkIfGameEnd(int* b, int** matrix){
 											}else{
 												/* the game is not end if there is one area that can fit in any of the shapes*/
 												end = 0;
-												break;
 											}
 											break;
 										}
@@ -684,124 +666,113 @@ int checkIfGameEnd(int* b, int** matrix){
 }
 
 //CHECK INPUT HERE
-void putBlock(int j, int* b, int** matrix, int** cache){
+void putBlock(int j, int** b, int** matrix, int** cache, struct usb_keyboard_packet packet, int transferred, char keystate[12]){
+	int x, y; //initialise position
 	int right_bound, left_bound, up_bound, low_bound, xsize, ysize;
+	x = 0;
+	y = 0;
 	int temp = b[j];
 	int q = j;
 	int inChoose;
-	struct usb_keyboard_packet packet;
-	int transferred;
-  	char keystate[12];
-	fprintf(stderr, "putting\n");
-	fprintf(stderr,"%d\n", q);
-	fprintf(stderr, "%d\n", temp);
 
 	switch(temp){
 		case 1:
-			right_bound = 5;
-			low_bound = 9;
-			xsize = 5;
-			ysize = 1;
+			right_bound = 9 - block1.width;
+			low_bound = 9 - block1.height;
+			xsize = block1.width;
+			ysize = block1.height;
 			break;
 		case 2:
-			right_bound = 9;
-			low_bound = 5;
-			xsize = 1;
-			ysize = 5;
+			right_bound = 9 - block2.width;
+			low_bound = 9 - block2.height;
+			xsize = block2.width;
+			ysize = block2.height;
 			break;
 		case 3:
-			right_bound = 6;
-			low_bound = 9;
-			xsize = 4;
-			ysize = 1;
+			right_bound = 9 - block3.width;
+			low_bound = 9 - block3.height;
+			xsize = block3.width;
+			ysize = block3.height;
 			break;
 		case 4:
-			right_bound = 9;
-			low_bound = 6;
-			xsize = 1;
-			ysize = 4;
+			right_bound = 9 - block4.width;
+			low_bound = 9 - block4.height;
+			xsize = block4.width;
+			ysize = block4.height;
 			break;
 		case 5:
-			right_bound = 8;
-			low_bound = 8;
-			xsize = 2;
-			ysize = 2;
+			right_bound = 9 - block5.width;
+			low_bound = 9 - block5.height;
+			xsize = block5.width;
+			ysize = block5.height;
 			break;
 		case 6:
-			right_bound = 7;
-			low_bound = 7;
-			xsize = 3;
-			ysize = 3;
+			right_bound = 9 - block6.width;
+			low_bound = 9 - block6.height;
+			xsize = block6.width;
+			ysize = block6.height;
 			break;
 		case 7:
-			right_bound = 7;
-			low_bound = 7;
-			xsize = 3;
-			ysize = 3;
+			right_bound = 9 - block7.width;
+			low_bound = 9 - block7.height;
+			xsize = block7.width;
+			ysize = block7.height;
 			break;
 		case 8:
-			right_bound = 9;
-			low_bound = 8;
-			xsize = 1;
-			ysize = 2;
+			right_bound = 9 - block8.width;
+			low_bound = 9 - block8.height;
+			xsize = block8.width;
+			ysize = block8.height;
 			break;
 		case 9:
-			right_bound = 9;
-			low_bound = 7;
-			xsize = 1;
-			ysize = 3;
+			right_bound = 9 - block9.width;
+			low_bound = 9 - block9.height;
+			xsize = block9.width;
+			ysize = block9.height;
 			break;
 		case 10:
-			right_bound = 9;
-			low_bound = 9;
-			xsize = 1;
-			ysize = 1;
+			right_bound = 9 - block10.width;
+			low_bound = 9 - block10.height;
+			xsize = block10.width;
+			ysize = block10.height;
 			break;
 		case 11:
-			right_bound = 8;
-			low_bound = 8;
-			xsize = 2;
-			ysize = 2;
+			right_bound = 9 - block11.width;
+			low_bound = 9 - block11.height;
+			xsize = block11.width;
+			ysize = block11.height;
 			break;
 		case 12:
-			right_bound = 7;
-			low_bound = 8;
-			xsize = 3;
-			ysize = 2;
+			right_bound = 9 - block12.width;
+			low_bound = 9 - block12.height;
+			xsize = block12.width;
+			ysize = block12.height;
 			break;
 		case 13:
-			right_bound = 7;
-			low_bound = 9;
-			xsize = 3;
-			ysize = 1;
+			right_bound = 9 - block13.width;
+			low_bound = 9 - block13.height;
+			xsize = block13.width;
+			ysize = block13.height;
 			break;
 		case 14:
-			right_bound = 8;
-			low_bound = 9;
-			xsize = 2;
-			ysize = 1;
+			right_bound = 9 - block14.width;
+			low_bound = 9 - block14.height;
+			xsize = block14.width;
+			ysize = block14.height;
 			break;
 		default:
 			break;
 	}
-	int loop_flag = 1;
-	
-	fprintf(stderr, "moving\n");
-	int x = 0;
-	int y = 0;
-	while(loop_flag == 1){
+
+	for(;;){
 		libusb_interrupt_transfer(keyboard, endpoint_address, (unsigned char *) &packet, sizeof(packet), &transferred, 0);
 	    if (transferred == sizeof(packet)) {
-	      	//sprintf(keystate, "%02x %02x %02x", packet.modifiers, packet.keycode[0], packet.keycode[1]);
+	      	sprintf(keystate, "%02x %02x %02x", packet.modifiers, packet.keycode[0], packet.keycode[1]);
+	    fbputs(keystate, 6, 0);
 	    if (packet.keycode[0] == 0x29){
 	      	matrix[10][0] = 1;
 	      	break;
 	    }else if(packet.keycode[0] == 0x4F){
-	    	//current position
-			fprintf(stderr, "right\n");
-			fprintf(stderr, "%d\n", x);
-			fprintf(stderr, "%d\n", y);
-
 	    	if (x < right_bound){
 	    		x = x + 1;
 	    		y = y;
@@ -810,12 +781,8 @@ void putBlock(int j, int* b, int** matrix, int** cache){
 	    		x = x;
 	    		y = y;
 	    	}
+	      					//right
 	    }else if(packet.keycode[0] == 0x50){
-	    	//current position
-			fprintf(stderr, "left\n");
-			fprintf(stderr, "%d\n", x);
-			fprintf(stderr, "%d\n", y);
-
 	    	if (x > 0){
 	    		x = x - 1;
 	    		y = y;
@@ -824,13 +791,9 @@ void putBlock(int j, int* b, int** matrix, int** cache){
 	    		x = x;
 	    		y = y;
 	    	}
+	      					//left
 	    }else if(packet.keycode[0] == 0x51){
-	    	//current position
-			fprintf(stderr, "down\n");
-			fprintf(stderr, "%d\n", x);
-			fprintf(stderr, "%d\n", y);
-
-	    	if (y < low_bound){
+	    	if (y > 0){
 	    		x = x;
 	    		y = y + 1;
 	    		moveBlock(temp, xsize, ysize, x, y, matrix, cache, 0);
@@ -838,31 +801,25 @@ void putBlock(int j, int* b, int** matrix, int** cache){
 	    		x = x;
 	    		y = y;
 	    	}
+	      					//down
 	    }else if(packet.keycode[0] == 0x52){
-	    	//current position
-			fprintf(stderr, "up\n");
-			fprintf(stderr, "%d\n", x);
-			fprintf(stderr, "%d\n", y);
-
-	    	if (y = 0){
-	    		x = x;
-	    		y = y;
-	    	}else{
+	    	if (y < up_bound){
 	    		x = x;
 	    		y = y - 1;
-			moveBlock(temp, xsize, ysize, x, y, matrix, cache, 0);
-	    	}
-	    }else if(packet.keycode[0] == 0x28){ // Enter
-	    	moveBlock(temp, xsize, ysize, x, y, matrix, cache, 0); // tell moveBlock to apply change to cache matrix
-	    	int check;
-	    	check = checkIfCanPut(xsize, ysize, x, y, cache, 0); //check if can put
-	    	if(check == 1){
-	    		inChoose = 1;
-	    		moveBlock(temp, xsize, ysize, x, y, matrix, cache, 1); // if can put, apply change to matrix
-	    		loop_flag = 0;
-	    		break;
+	    		moveBlock(temp, xsize, ysize, x, y, matrix, cache, 0);
 	    	}else{
-	    		inChoose = 0;// if cant put, keep in putBlock loop
+	    		x = x;
+	    		y = y;
+	    	}
+	      					//up
+	    }else if(packet.keycode[0] == 0x28){ // Enter
+	    	int check = checkIfCanPut(xsize, ysize, x, y, cache, 0);
+	    	if(check == 1){
+	    		inChoose = 1;// can put
+	    		moveBlock(temp, xsize, ysize, x, y, matrix, cache, check);
+	    	}else{
+	    		inChoose = 0;// cant put
+	    		break;		
 	    	}
 	    }
 	    }
@@ -873,13 +830,11 @@ void putBlock(int j, int* b, int** matrix, int** cache){
 int checkIfCanPut(int xsize, int ysize, int x, int y, int** matrix){
 	int i, j;
 	int check;
-	int check_row = y+ysize;
-	int check_col = x+xsize;
-	int temp3;
-	for (i = y; i < check_row; i++){
-		for (j = x; j < check_col; j ++){
-			temp3 = matrix[i][j];
-			if (temp3 == 3){
+	for (i = x; i < x+ysize; i++){
+		for (j = y; j < y+xsize; j ++){
+			int temp3 = matrix[i][j];
+			int check;
+			if (temp3 == 2){
 				check = 0;
 				break;
 			}else{
@@ -892,39 +847,33 @@ int checkIfCanPut(int xsize, int ysize, int x, int y, int** matrix){
 	return check;
 }
 
-int moveBlock(int block, int xsize, int ysize, int x, int y, int** matrix, int** cache, int boolPut){
+void moveBlock(int block, int xsize, int ysize, int x, int y, int** matrix, int** cache, int boolPut){
 	int i, j;
 	int m, n;
 	int** temp; //temp array to store shape of chosen block
 	//int** cache;
 	int c, cache_row, cache_col;
-	fprintf(stderr, "here2\n");
-	int check;
 
 	//initiliaze cache matrix
-	cache = malloc(11 * sizeof *cache);
 	for (c=0; c< 11; c++)
-    	{
-       		cache[c] = malloc(10 * sizeof(int));
-    	}
-
-	fprintf(stderr, "cache initiliazing\n");
+    {
+       cache[i] = malloc(11 * sizeof(int));
+    }
 
     for (cache_row = 0; cache_row < 11; cache_row++){
-			for (cache_col = 0; cache_col < 10; cache_col++){
-				cache[cache_row][cache_col] = matrix[cache_row][cache_col];
-			}
-	}	
-	fprintf(stderr, "cache initialized from matrix\n");
-	
-	temp = malloc(ysize * sizeof *temp);
+		for (cache_col = 0; cache_col < 10; cache_col++){
+			//printf("x == %d", b5[0][1]);
+			cache[cache_row][cache_col] = matrix[cache_row][cache_col];
+			//array[i][j] = 1;
+		}
+	}
+
 	for (i=0; i< ysize; i++)
-    	{
-       		temp[i] = malloc(xsize * sizeof(int));
-    	}
-	
-	fprintf(stderr, "temp array initiliazing\n");
-	
+    {
+       temp[i] = malloc(xsize * sizeof(int));
+    }
+
+    //int m, n;
 	for (m = 0; m < ysize; m++){
 		for (n = 0; n < xsize; n++){
 			//printf("x == %d", b5[0][1]);
@@ -932,7 +881,6 @@ int moveBlock(int block, int xsize, int ysize, int x, int y, int** matrix, int**
 			//array[i][j] = 1;
 		}
 	}
-	fprintf(stderr, "temp array initiliazed \n");
 
 	int p, q;
 	switch(block){
@@ -1040,33 +988,19 @@ int moveBlock(int block, int xsize, int ysize, int x, int y, int** matrix, int**
 	}
 
 	int temp_row, temp_col;
+	//int result;
+
 
 	for (temp_row = 0; temp_row < ysize; temp_row ++){
 		for (temp_col = 0; temp_col < xsize; temp_col ++){
 			if (boolPut == 0){
 				/* if did not trigger put block signal, save changes in cache matrix */
-				cache[0 + y + temp_row][0 + x + temp_col] = temp[temp_row][temp_col] + cache[0 + y + temp_row][0 + x + temp_col];
-				int judge;
-				judge = cache[0 + y + temp_row][0 + x + temp_col];
-				int block_part = temp[temp_row][temp_col];
-				if (judge == 2 && block_part == 1){
-					cache[0 + y + temp_row][0 + x + temp_col] = 3; // 不能放下,有重合部分变红
-				}else if (judge == 1 && block_part == 1){
-					cache[0 + y + temp_row][0 + x + temp_col] = 2; // 不能放下,不重合部分变绿
-				}
+				cache[0 + x + temp_row][0 + y + temp_col] = temp[temp_row][temp_col] + cache[0 + x + temp_row][0 + y + temp_col];
+				cache[0 + x + temp_row][0 + y + temp_col] = 3;
 				passToHardware(cache);
-
-				int test_x, test_y; 
-				for ( test_x =0; test_x < 10; test_x ++){
-					for ( test_y=0: test_y < 10; test_y ++){
-						int test = cache[test_x][test_y];
-					fprintf(stderr,"%d", test);
-				}
-				printf("\n");
-			}
 			}else if(boolPut == 1){
 				/* if triggered put block signal, save changes in matrix */
-				matrix[0 + y + temp_row][0 + x + temp_col] = temp[temp_row][temp_col] + matrix[0 + y + temp_row][0 + x + temp_col];
+				matrix[0 + x + temp_row][0 + y + temp_col] = temp[temp_row][temp_col] + matrix[0 + x + temp_row][0 + y + temp_col];
 				passToHardware(matrix);
 			}
 		}
@@ -1078,56 +1012,45 @@ int moveBlock(int block, int xsize, int ysize, int x, int y, int** matrix, int**
 
 
 //CHECK INPUT VALUE 
-int selectBlock(int length, int *b, int **cache)
+int selectBlock(int length, int *b, int **cache, struct usb_keyboard_packet packet, int transferred, char keystate[12])
 {
 	int t = 0; 
-	int select_flag = 1;
-	fprintf(stderr, "sB en\n");
-	struct usb_keyboard_packet packet;
-	int transferred;
-  	char keystate[12];
-	while(select_flag == 1){
-
+	for(;;){
 		libusb_interrupt_transfer(keyboard, endpoint_address, (unsigned char *) &packet, sizeof(packet), &transferred, 0);
 	    if (transferred == sizeof(packet)) {
-	      	//sprintf(keystate, "%02x %02x %02x", packet.modifiers, packet.keycode[0], packet.keycode[1]);
+	      	sprintf(keystate, "%02x %02x %02x", packet.modifiers, packet.keycode[0], packet.keycode[1]);
+	    fbputs(keystate, 6, 0);
 	    if (packet.keycode[0] == 0x29){
-			fprintf(stderr,"esc pressed\n");
+	      	//esc
+	      	break;
 	    }else if(packet.keycode[0] == 0x51){
-			fprintf(stderr,"down pressed\n");
 	    	if ( t == 2){
 	    		t = 0;
 	    		//hightlight b[j]
 	    	}else{
 	    		t = t + 1;
 	    	}
-	    	//write_segments(107, t);
 	      	//down
 	    }else if(packet.keycode[0] == 0x52){
-			fprintf(stderr,"up pressed\n");
 	    	if ( t == 0){
 	    		t = 2;
 	    	}else{
 	    		t = t - 1;
 	    	}
-	    	//write_segments(107, t);
 	      	//up
 	    }else if(packet.keycode[0] == 0x28){  //enter
-			fprintf(stderr,"enter pressed\n");
 	    	if (b[t] == 0){
 	    		packet.keycode[0x51];//if chosen block has been used, move cursor to next block
 	    	}else{
-			select_flag = 0;
 	    		return t;
-	    		select_flag = 0;
-	    		//break;
+	    		break;
 	    	}
 	    }
 	    }
 	}
 }
 
-void genNewBlock(int set_new_blocks, int* b)
+void genNewBlock(int set_new_blocks, int** b)
 {
 	int i, j;
 	if (set_new_blocks == 1){
@@ -1135,7 +1058,6 @@ void genNewBlock(int set_new_blocks, int* b)
 		for (i=0; i< 3; i++)
 		{
 			b[i] = generate();
-			//printf("%d\n", b[i]);
 		}
 		//checkIfFullLine() = 0;
 	    //set_new_blocks = 0;
@@ -1145,60 +1067,7 @@ void genNewBlock(int set_new_blocks, int* b)
 
 }
 
-void showBloack(int j, int** cache){
-	int temp;
-	temp = cache[10][j+1];
-	switch(temp){
-		case 1:
-			cache[0][0] = cache[0][1] = cache[0][2] = cache[0][3] = cache[0][4] = 1;
-			break;
-		case 2:
-			cache[0][0] = cache[1][0] = cache[2][0] = cache[3][0] = cache[4][0] = 1;
-			break;
-		case 3:
-			cache[0][0] = cache[0][1] = cache[0][2] = cache[0][3] = 1;
-			break;
-		case 4:
-			cache[0][0] = cache[1][0] = cache[2][0] = cache[3][0] = 1;
-			break;
-		case 5:
-			cache[0][0] = cache[1][0] = cache[0][1] = cache[1][1] = 1;
-			break;
-		case 6:
-			cache[0][0] = cache[0][1] = cache[0][2] = cache[1][0] = cache[2][0] = 1;
-			break;
-		case 7:
-			cache[0][0] = cache[0][1] = cache[0][2] = cache[1][2] = cache[2][2] = 1;
-			break;
-		case 8:
-			cache[0][0] = cache[1][0] = 1;
-			break;
-		case 9:
-			cache[0][0] = cache[0][1] = cache[0][2] = 1;
-			break;
-		case 10:
-			cache[1][1] = 1;
-			break;
-		case 11:
-			cache[0][0] = cache[0][1] = cache[1][0] = 1;
-			break;
-		case 12:
-			cache[0][0] = cache[0][1] = cache[1][1] = cache[1][2] = 1;
-			break;
-		case 13:
-			cache[0][0] = cache[0][1] = cache[0][2] = 1;
-			break;
-		case 14:
-			cache[0][0] = cache[0][1] = 1;
-			break;
-		default:
-			perror("no data input");
-			break;
 
-	}
-
-	fprintf(stderr, "showed block on main");
-}
 
 
 
@@ -1207,31 +1076,19 @@ void showBloack(int j, int** cache){
 //***********************************************************************
 int main(void)
 {
-	vga_led_arg_t vla;
- 	static const char filename[] = "/dev/vga_led";
-
-	fprintf(stderr, "loading MOD");
-
-  	if ( (vga_led_fd = open(filename, O_RDWR)) == -1) {
-    	fprintf(stderr, "could not open %s\n", filename);
-    	return -1;
-  	}
-	
-	int *b;
+	int **b;
 	int **matrix;
 	int rows = MATRIX_ROW;
 	int cols = MATRIX_COL;
 	int i, k, t;
 	int **cache;
-
 	struct usb_keyboard_packet packet;
 	int transferred;
   	char keystate[12];
 	int c, cache_row, cache_col;
 
 	matrix = malloc(rows * sizeof *matrix);
-	b = (int *)malloc(3 * sizeof (int));
-	cache = malloc(rows * sizeof *cache);
+	b = malloc(1 * sizeof *b);
 	for (k=0; k<1; k++)
     {
        b[k] = malloc(cols * sizeof(int));
@@ -1245,11 +1102,6 @@ int main(void)
     {
        matrix[i] = malloc(cols * sizeof(int));
     }
-	
-	for (c=0; c< rows; c++)
-    {
-       cache[c] = malloc(cols * sizeof(int));
-    }
 
     int m, n;
 	for (m = 0; m < MATRIX_ROW; m++){
@@ -1261,7 +1113,10 @@ int main(void)
 	}
 
 	//initiliaze cache matrix
-
+	for (c=0; c< 11; c++)
+    {
+       cache[i] = malloc(11 * sizeof(int));
+    }
 
     for (cache_row = 0; cache_row < 11; cache_row++){
 		for (cache_col = 0; cache_col < 10; cache_col++){
@@ -1346,64 +1201,43 @@ int main(void)
 	 0    0    0    0    0    0    0    0    0    0
      0    0    0    0    0    0    0    0    0    0
 	 0    0    0    0    0    0    0    0    0    0
-	state b[0] b[1] b[2] end scr   j    0    0    0
+	state b[0] b[1] b[2] end  0    0    0    0    0
 
 	*/
 	matrix[10][0] = inChoose;
 	matrix[10][1] = b[0];
 	matrix[10][2] = b[1];
 	matrix[10][3] = b[2];
-	cache[10][0] = inChoose;
-	cache[10][1] = b[0];
-	cache[10][2] = b[1];
-	cache[10][3] = b[2];
-	perror("started");
 	passToHardware(matrix);
-	perror("p2h out");
+
 	int j;
 	int set_new_blocks;
-	
-	//printf("keyboard?????");
-	if ((keyboard = openkeyboard(&endpoint_address)) == NULL){
+
+	if ((keyboard = openKeyboard(&endpoint_address)) == NULL){
 		fprintf(stderr, "keyboard not found" );
 		exit(1);
-	}else{
-		perror("keyboard found");
 	}
 
- for (;;) {
-    libusb_interrupt_transfer(keyboard, endpoint_address,
-			      (unsigned char *) &packet, sizeof(packet),
-			      &transferred, 0);
-    
-	if (transferred == sizeof(packet)) {
-		fprintf(stderr, "key press catch\n");
-		
-		//Main loop
+	for (;;) {
 		if (inChoose == 1){
-			j = selectBlock(3, b, matrix);
-			//fprintf(stderr, "sB out");
+			j = selectBlock(3, b, cache, packet, transferred, keystate);
 			inChoose = 0;
 			matrix[10][0] = inChoose;
-			cache[10][0] = inChoose;
-			showBloack(j, cache);
-			passToHardware(cache);
+			passToHardware(matrix);
 
 		}else{
-			fprintf(stderr, "put Block next\n");
-			fprintf(stderr,"%d\n", j);
-			putBlock(j, b, matrix, cache);
+			putBlock(j, b, matrix, cache, packet, transferred, keystate);
 			b[j] = 0;//make used blocks blank
 			matrix[10][j+1] = 0;
-			passToHardware(matrix);
-			clearLine(matrix);
+
 			if (checkIfGameEnd(b, matrix) == 1){
 				matrix[10][4] = 1;
 				passToHardware(matrix);
-				fprintf(stderr,"%s\n", "end");
+				printf("%s\n", "end");
 				break;
 			}else{
 				matrix[10][4] = 0;
+				clearLine(matrix);
 				if (b[0] == 0){
 					if (b[1] == 0){
 						if (b[2] == 0){
@@ -1422,17 +1256,14 @@ int main(void)
 				matrix[10][1] = b[0];
 				matrix[10][2] = b[1];
 				matrix[10][3] = b[2];
-				cache[10][0] = 1;
-				cache[10][1] = b[0];
-				cache[10][2] = b[1];
-				cache[10][3] = b[2];
 				passToHardware(matrix);
 			}
 		}
-		//break;
+		break;
 		
-
-		}
+		
 	}
-		//return 0;
+	return 0;
 };
+
+

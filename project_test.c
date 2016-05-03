@@ -11,12 +11,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
+#include <time.h>
 
 
 /*************************************End Headers*************************************************/
 #define MATRIX_ROW 11
 #define MATRIX_COL 10
+#define time 0
 
 /*************************CODE FOR CALLING THE INTERFACE BETWEEN HARDWARE AND SOFTWARE*******************************/
 /*segment: the data you want to write into the hardware
@@ -1241,8 +1242,14 @@ void showBloack(int j, int** cache){
 }
 
 
+void timer(){
 
+	flag = 1;
+	while(flag){
+		sleep(300);
+	}
 
+}
 
 //***********************************************************************
 int main(void)

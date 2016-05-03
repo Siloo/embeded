@@ -1056,36 +1056,61 @@ int moveBlock(int block, int xsize, int ysize, int x, int y, int** matrix, int**
 			break;
 	}
 
-	int temp_row, temp_col;
-	int check = 0;
-	for (temp_row = 0; temp_row < ysize; temp_row ++){
-		for (temp_col = 0; temp_col < xsize; temp_col++){
-			cache[0 + y + temp_row][0 + x + temp_col] = temp[temp_row][temp_col] + cache[0 + y + temp_row][0 + x + temp_col];
-				int judge;
-				judge = cache[0 + y + temp_row][0 + x + temp_col];
-				int block_part = temp[temp_row][temp_col];
-				if (judge == 2 && block_part == 1){
-					cache[0 + y + temp_row][0 + x + temp_col] = 3; // 不能放下,有重合部分变红
-				}else if (judge == 1 && block_part == 1){
-					cache[0 + y + temp_row][0 + x + temp_col] = 2; // 不能放下,不重合部分变绿
-				}
-		}
-	}
 
-	check = checkIfCanPut(cache);
-
-	int put_x, put_y;
-	if (check == 0){
-		return 0;
-	}else if(check == 1 && boolPut == 1){
-		for( put_x = 0 ; put_x < ysize ; put_x ++){
-			for( put_y = 0; put_y < xsize; put_y ++){
-				matrix[0 + y + put_x][0 + x + put_y] = temp[put_x][put_y] + matrix[0 + y + put_x][0 + x + put_y];
-
+	if (boolPut == 0){
+		int temp_row, temp_col;
+		int check = 0;
+		for (temp_row = 0; temp_row < ysize; temp_row ++){
+			for (temp_col = 0; temp_col < xsize; temp_col++){
+				cache[0 + y + temp_row][0 + x + temp_col] = temp[temp_row][temp_col] + cache[0 + y + temp_row][0 + x + temp_col];
+					int judge;
+					judge = cache[0 + y + temp_row][0 + x + temp_col];
+					int block_part = temp[temp_row][temp_col];
+					if (judge == 2 && block_part == 1){
+						cache[0 + y + temp_row][0 + x + temp_col] = 3; // 不能放下,有重合部分变红
+					}else if (judge == 1 && block_part == 1){
+						cache[0 + y + temp_row][0 + x + temp_col] = 2; // 不能放下,不重合部分变绿
+					}
 			}
 		}
+		passToHardware(cache);
+		return 0;
 
-	return 1;
+	}else if(boolPut == 1){
+		int temp_row, temp_col;
+		int check = 0;
+		for (temp_row = 0; temp_row < ysize; temp_row ++){
+			for (temp_col = 0; temp_col < xsize; temp_col++){
+				cache[0 + y + temp_row][0 + x + temp_col] = temp[temp_row][temp_col] + cache[0 + y + temp_row][0 + x + temp_col];
+					int judge;
+					judge = cache[0 + y + temp_row][0 + x + temp_col];
+					int block_part = temp[temp_row][temp_col];
+					if (judge == 2 && block_part == 1){
+						cache[0 + y + temp_row][0 + x + temp_col] = 3; // 不能放下,有重合部分变红
+					}else if (judge == 1 && block_part == 1){
+						cache[0 + y + temp_row][0 + x + temp_col] = 2; // 不能放下,不重合部分变绿
+					}
+			}
+		}
+		passToHardware(cache);
+		check = checkIfCanPut(cache);
+
+
+		if(check == 0){
+			return 0;
+		}else if(check == 1){
+			int put_x, put_y;
+			for( put_x = 0 ; put_x < ysize ; put_x ++){
+				for( put_y = 0; put_y < xsize; put_y ++){
+					matrix[0 + y + put_x][0 + x + put_y] = temp[put_x][put_y] + matrix[0 + y + put_x][0 + x + put_y];
+
+				}
+			}
+			passToHardware(matrix);
+			return 1;
+
+		}
+
 	}
 /*
 

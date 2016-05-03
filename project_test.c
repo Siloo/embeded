@@ -12,7 +12,12 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <time.h>
+#include <pthread.h>
 
+pthread_t timer_thread;
+pthread_t click_thread;
+
+int timer;
 
 /*************************************End Headers*************************************************/
 #define MATRIX_ROW 11
@@ -811,6 +816,7 @@ void putBlock(int j, int* b, int** matrix, int** cache){
 	while(loop_flag == 1){
 		libusb_interrupt_transfer(keyboard, endpoint_address, (unsigned char *) &packet, sizeof(packet), &transferred, 0);
 	    if (transferred == sizeof(packet)) {
+	    	pthread_create(&click_thread, NULL, click_thread_f, NULL);
 	      	//sprintf(keystate, "%02x %02x %02x", packet.modifiers, packet.keycode[0], packet.keycode[1]);
 	    if (packet.keycode[0] == 0x29){
 	      	matrix[10][0] = 1;
@@ -1131,6 +1137,7 @@ int selectBlock(int length, int *b, int **cache)
 
 		libusb_interrupt_transfer(keyboard, endpoint_address, (unsigned char *) &packet, sizeof(packet), &transferred, 0);
 	    if (transferred == sizeof(packet)) {
+	    	pthread_create(&click_thread, NULL, click_thread_f, NULL);
 	      	//sprintf(keystate, "%02x %02x %02x", packet.modifiers, packet.keycode[0], packet.keycode[1]);
 	    if (packet.keycode[0] == 0x29){
 			fprintf(stderr,"esc pressed\n");
@@ -1242,11 +1249,28 @@ void showBloack(int j, int** cache){
 }
 
 
-void timer(){
+void *timer_thread_f(){
+	int start = clock();
+	int end = 0;
+	while(1){
+		end = clock();
+		if (end - start == 300000){
+			pthread_exit(NULL);
+			return 0;
+			}
+		} 
+	}
 
-	flag = 1;
-	while(flag){
-		sleep(300);
+void *click_thread_f(){
+	int start = clock();
+	int end = 0;
+	/******************************send start music signal************************/
+	while(1){
+		end = clock();
+		if (end - start == 1000){
+			/**************send end music signal**************/
+			pthread_exit(NULL);
+		}
 	}
 
 }
@@ -1418,6 +1442,8 @@ int main(void)
 	}else{
 		perror("keyboard found");
 	}
+
+	pthread_create(&timer_thread, NULL, timer_thread_f, NULL);
 
  for (;;) {
     libusb_interrupt_transfer(keyboard, endpoint_address,

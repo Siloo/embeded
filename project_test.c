@@ -42,8 +42,6 @@ unsigned int read_segments(int index){
 */
 
 int vga_led_fd;
-
-
 /****************************************************END CODE*************************************************************/
 
 //initialize blocks

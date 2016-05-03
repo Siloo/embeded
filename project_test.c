@@ -1112,57 +1112,6 @@ int moveBlock(int block, int xsize, int ysize, int x, int y, int** matrix, int**
 		}
 
 	}
-/*
-
-	for (temp_row = 0; temp_row < ysize; temp_row ++){
-		for (temp_col = 0; temp_col < xsize; temp_col ++){
-			if (boolPut == 0){
-				//if did not trigger put block signal, save changes in cache matrix 
-				cache[0 + y + temp_row][0 + x + temp_col] = temp[temp_row][temp_col] + cache[0 + y + temp_row][0 + x + temp_col];
-				int judge;
-				judge = cache[0 + y + temp_row][0 + x + temp_col];
-				int block_part = temp[temp_row][temp_col];
-				if (judge == 2 && block_part == 1){
-					cache[0 + y + temp_row][0 + x + temp_col] = 3; // 不能放下,有重合部分变红
-				}else if (judge == 1 && block_part == 1){
-					cache[0 + y + temp_row][0 + x + temp_col] = 2; // 不能放下,不重合部分变绿
-				}
-				checkIfCanPut(cache)
-				passToHardware(cache);
-				
-				int test_x, test_y;
-				for (test_x = 0; test_x < 10; test_x ++){
-					for (test_y = 0; test_y < 10; test_y ++){
-						int test = cache[test_x][test_y];
-						printf("%d", test);					
-					}
-					fprintf(stderr, "\n");				
-				}
-				//check = 0;
-				return 0;
-				
-
-			}else if(boolPut == 1){
-				//fprintf(stderr, "block has been placed");
-				//if triggered put block signal, save changes in matrix 
-				matrix[0 + y + temp_row][0 + x + temp_col] = temp[temp_row][temp_col] + matrix[0 + y + temp_row][0 + x + temp_col];
-				
-				int m_x, m_y;
-				int test_m;
-				test_m = 0;
-				for (m_x = 0; m_x < 10; m_x ++){
-					for (m_y = 0; m_y < 10; m_y ++){
-						int test_m = matrix[m_x][m_y];
-						fprintf(stderr, "%d", test_m);					
-					}
-					fprintf(stderr, "\n");				
-				}
-				
-				passToHardware(matrix);
-			}
-		}
-	}
-*/
 
 }
 

@@ -233,7 +233,7 @@ int checkIfGameEnd(int* b, int** matrix){
 						int temp_block = matrix[m][n];
 						/*start to  extract blocks from matrix if there is an empty bloack and start from this block there are enough blocks to match the shape, 
 						regardless if the blocks are empty or not*/
-						if (temp_block == 0 && 9 - m > 0 && 9 - n < 6){
+						if (temp_block == 0 && 10 - m > 0 && 10 - n < 6){
 							for(temp_row = 0; temp_row < 1; temp_row ++){
 								for (temp_col = 0; temp_col < 5; temp_col ++){
 									/*extract the shape of one of the left shapes and compare*/
@@ -870,16 +870,17 @@ void putBlock(int j, int* b, int** matrix, int** cache){
 	    		y = y - 1;
 			moveBlock(temp, xsize, ysize, x, y, matrix, cache, 0);
 	    	}
+
 	    }else if(packet.keycode[0] == 0x28){ // Enter
-	    	moveBlock(temp, xsize, ysize, x, y, matrix, cache, 0); // tell moveBlock to apply change to cache matrix
-	    	int check;
-	    	check = checkIfCanPut(xsize, ysize, x, y, cache, 0); //check if can put
+	    	int check = 0;
+	    	check = moveBlock(temp, xsize, ysize, x, y, matrix, cache, 1); // tell moveBlock to apply change to cache matrix
+
 	    	if(check == 1){
 	    		inChoose = 1;
-	    		moveBlock(temp, xsize, ysize, x, y, matrix, cache, 1); // if can put, apply change to matrix
+	    		//moveBlock(temp, xsize, ysize, x, y, matrix, cache, 1); // if can put, apply change to matrix
 	    		loop_flag = 0;
 	    		break;
-	    	}else{
+	    	}else if(check == 0){
 	    		inChoose = 0;// if cant put, keep in putBlock loop
 	    	}
 	    }
@@ -888,27 +889,25 @@ void putBlock(int j, int* b, int** matrix, int** cache){
 	matrix[10][0] = inChoose;
 }
 
-int checkIfCanPut(int xsize, int ysize, int x, int y, int** matrix){
+
+int checkIfCanPut(int** cache){
 	int i, j;
 	int check;
-	int check_row = y+ysize;
-	int check_col = x+xsize;
+	check = 1;
 	int temp3;
-	for (i = y; i < check_row; i++){
-		for (j = x; j < check_col; j ++){
-			temp3 = matrix[i][j];
+	temp3 = 0;
+	for(i = 0; i<10; i++){
+		for(j = 0; j < 10; j++){
+			temp3 = cache[i][j];
 			if (temp3 == 3){
 				check = 0;
 				break;
-			}else{
-				check = 1;
 			}
-			break;
 		}
-		break;
 	}
 	return check;
 }
+
 
 int moveBlock(int block, int xsize, int ysize, int x, int y, int** matrix, int** cache, int boolPut){
 	int i, j;
@@ -1058,11 +1057,42 @@ int moveBlock(int block, int xsize, int ysize, int x, int y, int** matrix, int**
 	}
 
 	int temp_row, temp_col;
+	int check = 0;
+	for (temp_row = 0; temp_row < ysize; temp_row ++){
+		for (temp_col = 0; temp_col < xsize; temp_col++){
+			cache[0 + y + temp_row][0 + x + temp_col] = temp[temp_row][temp_col] + cache[0 + y + temp_row][0 + x + temp_col];
+				int judge;
+				judge = cache[0 + y + temp_row][0 + x + temp_col];
+				int block_part = temp[temp_row][temp_col];
+				if (judge == 2 && block_part == 1){
+					cache[0 + y + temp_row][0 + x + temp_col] = 3; // 不能放下,有重合部分变红
+				}else if (judge == 1 && block_part == 1){
+					cache[0 + y + temp_row][0 + x + temp_col] = 2; // 不能放下,不重合部分变绿
+				}
+		}
+	}
+
+	check = checkIfCanPut(cache);
+
+	int put_x, put_y;
+	if (check == 0){
+		return 0;
+	}else if(check == 1 && boolPut == 1){
+		for( put_x = 0 ; put_x < ysize ; put_x ++){
+			for( put_y = 0; put_y < xsize; put_y ++){
+				matrix[0 + y + put_x][0 + x + put_y] = temp[put_x][put_y] + matrix[0 + y + put_x][0 + x + put_y];
+
+			}
+		}
+
+	return 1;
+	}
+/*
 
 	for (temp_row = 0; temp_row < ysize; temp_row ++){
 		for (temp_col = 0; temp_col < xsize; temp_col ++){
 			if (boolPut == 0){
-				/* if did not trigger put block signal, save changes in cache matrix */
+				//if did not trigger put block signal, save changes in cache matrix 
 				cache[0 + y + temp_row][0 + x + temp_col] = temp[temp_row][temp_col] + cache[0 + y + temp_row][0 + x + temp_col];
 				int judge;
 				judge = cache[0 + y + temp_row][0 + x + temp_col];
@@ -1072,21 +1102,24 @@ int moveBlock(int block, int xsize, int ysize, int x, int y, int** matrix, int**
 				}else if (judge == 1 && block_part == 1){
 					cache[0 + y + temp_row][0 + x + temp_col] = 2; // 不能放下,不重合部分变绿
 				}
+				checkIfCanPut(cache)
 				passToHardware(cache);
 				
 				int test_x, test_y;
 				for (test_x = 0; test_x < 10; test_x ++){
 					for (test_y = 0; test_y < 10; test_y ++){
 						int test = cache[test_x][test_y];
-						fprintf(stderr, "%d", test);					
+						printf("%d", test);					
 					}
 					fprintf(stderr, "\n");				
 				}
+				//check = 0;
+				return 0;
 				
 
 			}else if(boolPut == 1){
 				//fprintf(stderr, "block has been placed");
-				/* if triggered put block signal, save changes in matrix */
+				//if triggered put block signal, save changes in matrix 
 				matrix[0 + y + temp_row][0 + x + temp_col] = temp[temp_row][temp_col] + matrix[0 + y + temp_row][0 + x + temp_col];
 				
 				int m_x, m_y;
@@ -1104,7 +1137,7 @@ int moveBlock(int block, int xsize, int ysize, int x, int y, int** matrix, int**
 			}
 		}
 	}
-
+*/
 
 }
 
